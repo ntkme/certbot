@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+
+import docker, os, subprocess, sys
+
+def renew(args=[]):
+    subprocess.run(["certbot", "renew", "--deploy-hook", __file__] + args)
+
+def kill(renewed_lineage, signal="SIGHUP"):
+    try:
+        client = docker.from_env()
+    except:
+        return
+
+    with open("/proc/1/cpuset") as f:
+        cpuset = f.read().strip()
+
+    if cpuset == '/':
+        container_id = None
+    else:
+        container = client.containers.get(os.path.basename(cpuset))
+        container_id = container.id
+
+        _renewed_lineage = None
+        for mount in sorted(container.attrs["Mounts"], key=lambda mount: len(mount["Destination"]), reverse=True):
+            if (renewed_lineage + os.sep).startswith(mount["Destination"] + os.sep):
+                _renewed_lineage = mount["Source"] + renewed_lineage[len(mount["Destination"]):]
+                break
+        if _renewed_lineage == None:
+            return
+        renewed_lineage = _renewed_lineage
+
+    for container in client.containers.list():
+        if container.id == container_id:
+            continue
+        for mount in container.attrs["Mounts"]:
+            if (renewed_lineage + os.sep).startswith(mount["Source"] + os.sep):
+                container.kill(signal)
+                break
+
+def main():
+    if "RENEWED_LINEAGE" not in os.environ:
+        renew(sys.argv[1:])
+    else:
+        kill(os.environ["RENEWED_LINEAGE"])
+
+if __name__ == "__main__":
+    main()
