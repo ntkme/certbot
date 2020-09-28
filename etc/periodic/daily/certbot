@@ -17,7 +17,11 @@ def kill(renewed_lineage, signal="SIGHUP"):
     if cpuset == '/':
         container_id = None
     else:
-        container = client.containers.get(os.path.basename(cpuset))
+        if cpuset.endswith('.scope'):
+            container = client.containers.get(os.path.splitext(os.path.basename(cpuset))[0].split('-')[-1])
+        else:
+            container = client.containers.get(os.path.basename(cpuset))
+
         container_id = container.id
 
         _renewed_lineage = None
