@@ -10,4 +10,4 @@ VOLUME ["/etc/letsencrypt", "/var/lib/letsencrypt", "/var/log/letsencrypt"]
 
 STOPSIGNAL SIGKILL
 
-ENTRYPOINT ["/bin/sh", "-c", "certbot certonly --non-interactive --agree-tos --email $(whoami)@$(hostname) --standalone --deploy-hook /etc/periodic/daily/certbot --cert-name $(hostname) --domain $(hostname) \"$@\" && if test $# -eq 0; then exec crond -f; fi", "--"]
+ENTRYPOINT ["/bin/sh", "-c", "certbot certonly --non-interactive --agree-tos --email $(whoami)@$(hostname) --standalone --deploy-hook /etc/periodic/daily/certbot --cert-name $(hostname) --domain $(hostname) \"$@\" && exec crond -f", "--"]
