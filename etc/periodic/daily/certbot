@@ -8,6 +8,7 @@ def renew(args=[]):
 def kill(renewed_lineage, signal="SIGHUP"):
     try:
         client = docker.from_env()
+        client.ping()
     except:
         return
 
