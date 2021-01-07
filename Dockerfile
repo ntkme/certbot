@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache certbot docker-py
+RUN apk add --no-cache certbot docker-py openssh-client
 
 COPY ./etc/periodic/daily/certbot /etc/periodic/daily/certbot
 
