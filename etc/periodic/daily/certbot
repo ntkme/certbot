@@ -1,14 +1,60 @@
 #!/usr/bin/python3
 
-import docker, os, subprocess, sys
+import docker, encodings, json, os, shlex, subprocess, sys, pwd
+
+class PodmanClient(docker.DockerClient):
+    class APIClient(docker.api.client.APIClient):
+        def __init__(self, ssh_port=22):
+            self.ssh_port = ssh_port
+
+        def containers(self, **kwargs):
+            return json.loads(self._ssh("podman container list -q | xargs -r podman container inspect") or "[]")
+
+        @docker.utils.check_resource("container")
+        def inspect_container(self, container):
+            return json.loads(self._ssh("podman container inspect {}".format(shlex.quote(container))))[0]
+
+        @docker.utils.check_resource("container")
+        def kill(self, container, signal="KILL"):
+            self._ssh("podman kill --signal {} {}".format(shlex.quote(signal), shlex.quote(container)))
+
+        def _ssh(self, cmd, default=""):
+            return subprocess.run(["ssh", "-p", str(self.ssh_port), "-o", "StrictHostKeyChecking=no", "-q", "root@localhost", "--", cmd], capture_output=True, check=True, encoding=encodings.utf_8.getregentry().name).stdout
+
+        def ping(self):
+            self._ssh("podman version")
+            return True
+
+    def __init__(self, *args, **kwargs):
+        self.api = PodmanClient.APIClient(*args, **kwargs)
+
+    @classmethod
+    def from_env(cls, **kwargs):
+        try:
+            client = docker.from_env(**kwargs)
+            client.ping()
+            return client
+        except:
+            pass
+
+        for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
+            if os.path.exists(filename):
+                with open(filename, 'r') as f:
+                    try:
+                        client = cls(ssh_port=int(f.read()))
+                        client.ping()
+                        return client
+                    except:
+                        pass
+
+        raise Exception()
 
 def renew(args=[]):
     subprocess.run(["certbot", "renew", "--deploy-hook", __file__] + args)
 
 def kill(renewed_lineage, signal="SIGHUP"):
     try:
-        client = docker.from_env()
-        client.ping()
+        client = PodmanClient.from_env()
     except:
         return
 
@@ -18,11 +64,7 @@ def kill(renewed_lineage, signal="SIGHUP"):
     if cpuset == '/':
         container_id = None
     else:
-        if cpuset.endswith('.scope'):
-            container = client.containers.get(os.path.splitext(os.path.basename(cpuset))[0].split('-')[-1])
-        else:
-            container = client.containers.get(os.path.basename(cpuset))
-
+        container = client.containers.get(os.path.splitext(os.path.basename(cpuset))[0].split('-')[-1])
         container_id = container.id
 
         _renewed_lineage = None
