@@ -40,12 +40,9 @@ class PodmanClient(docker.DockerClient):
         for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
             if os.path.exists(filename):
                 with open(filename, 'r') as f:
-                    try:
-                        client = cls(ssh_port=int(f.read()))
-                        client.ping()
-                        return client
-                    except:
-                        pass
+                    client = cls(ssh_port=int(f.read()))
+                    client.ping()
+                    return client
 
         raise Exception()
 
