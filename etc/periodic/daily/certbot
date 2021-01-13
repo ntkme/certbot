@@ -35,16 +35,13 @@ class _DockerClient(docker.DockerClient):
             client.ping()
             return client
         except:
-            pass
-
-        for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
-            if os.path.exists(filename):
-                with open(filename, 'r') as f:
-                    client = cls(ssh_port=int(f.read()))
-                    client.ping()
-                    return client
-
-        raise Exception()
+            for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
+                if os.path.exists(filename):
+                    with open(filename, 'r') as f:
+                        client = cls(ssh_port=int(f.read()))
+                        client.ping()
+                        return client
+            raise
 
 def renew(args=[]):
     subprocess.run(["certbot", "renew", "--deploy-hook", __file__] + args)
