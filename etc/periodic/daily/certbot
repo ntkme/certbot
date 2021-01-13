@@ -3,8 +3,13 @@
 import docker, encodings, json, os, shlex, subprocess, sys, pwd
 
 class _APIClient(docker.api.client.APIClient):
-    def __init__(self, ssh_port=22):
+    def __init__(self, ssh_hostname="localhost", ssh_port=22, ssh_user=pwd.getpwuid(os.getuid()).pw_name):
+        self.ssh_hostname = ssh_hostname
         self.ssh_port = ssh_port
+        self.ssh_user = ssh_user
+
+    def _ssh(self, cmd, default=""):
+        return subprocess.run(["ssh", "-l", self.ssh_user, "-o", "StrictHostKeyChecking=no", "-p", str(self.ssh_port), "-q", self.ssh_hostname, "--", cmd], capture_output=True, check=True, encoding=encodings.utf_8.getregentry().name).stdout
 
     def containers(self, **kwargs):
         return json.loads(self._ssh("podman container list -q | xargs -r podman container inspect") or "[]")
@@ -14,11 +19,8 @@ class _APIClient(docker.api.client.APIClient):
         return json.loads(self._ssh("podman container inspect {}".format(shlex.quote(container))))[0]
 
     @docker.utils.check_resource("container")
-    def kill(self, container, signal="KILL"):
+    def kill(self, container, signal="SIGKILL"):
         self._ssh("podman kill --signal {} {}".format(shlex.quote(signal), shlex.quote(container)))
-
-    def _ssh(self, cmd, default=""):
-        return subprocess.run(["ssh", "-p", str(self.ssh_port), "-o", "StrictHostKeyChecking=no", "-q", "root@localhost", "--", cmd], capture_output=True, check=True, encoding=encodings.utf_8.getregentry().name).stdout
 
     def ping(self):
         self._ssh("podman version")
