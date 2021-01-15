@@ -1,15 +1,14 @@
 #!/usr/bin/python3
 
-import docker, encodings, json, os, shlex, subprocess, sys, pwd
+import docker, encodings, json, os, shlex, subprocess, sys
 
 class _APIClient(docker.api.client.APIClient):
-    def __init__(self, ssh_hostname="localhost", ssh_port=22, ssh_user=pwd.getpwuid(os.getuid()).pw_name):
+    def __init__(self, ssh_hostname="localhost", ssh_options=[]):
         self.ssh_hostname = ssh_hostname
-        self.ssh_port = ssh_port
-        self.ssh_user = ssh_user
+        self.ssh_options = ssh_options
 
     def _ssh(self, cmd, default=""):
-        return subprocess.run(["ssh", "-l", self.ssh_user, "-o", "StrictHostKeyChecking=no", "-p", str(self.ssh_port), "-q", self.ssh_hostname, "--", cmd], capture_output=True, check=True, encoding=encodings.utf_8.getregentry().name).stdout
+        return subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "-q", *self.ssh_options, self.ssh_hostname, "--", cmd], capture_output=True, check=True, encoding=encodings.utf_8.getregentry().name).stdout
 
     def containers(self, **kwargs):
         return json.loads(self._ssh("podman container list -q | xargs -r podman container inspect") or "[]")
@@ -37,12 +36,16 @@ class _DockerClient(docker.DockerClient):
             client.ping()
             return client
         except:
-            for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
-                if os.path.exists(filename):
-                    with open(filename, 'r') as f:
-                        client = cls(ssh_port=int(f.read()))
-                        client.ping()
-                        return client
+            if os.path.exists(os.path.expanduser("~/.ssh")):
+                ssh_options = []
+                for filename in ["/etc/unifi-os/ssh_proxy_port", "/var/run/ssh_proxy_port"]:
+                    if os.path.exists(filename):
+                        with open(filename, 'r') as f:
+                            ssh_options = ["-p", str(int(f.read()))]
+                        break
+                client = cls(ssh_options=ssh_options)
+                client.ping()
+                return client
             raise
 
 def renew(args=[]):
