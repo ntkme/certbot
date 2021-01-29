@@ -16,6 +16,6 @@ podman run -d \
   --hostname $(hostname -f) \
   --publish 80:80/tcp \
   --volume /etc/letsencrypt:/etc/letsencrypt \
-  --volume /run/podman/podman.sock:/var/run/docker.sock \
+  --volume /var/run/podman/podman.sock:/var/run/docker.sock \
   ntkme/certbot
 ```
