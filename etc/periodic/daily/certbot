@@ -49,7 +49,7 @@ class _DockerClient(docker.DockerClient):
             raise
 
 def renew(args=[]):
-    subprocess.run(["certbot", "renew", "--deploy-hook", __file__] + args)
+    subprocess.run(["certbot", "renew"] + args)
 
 def kill(renewed_lineage, signal="SIGHUP"):
     try:

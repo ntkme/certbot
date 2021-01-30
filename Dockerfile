@@ -10,4 +10,4 @@ VOLUME ["/etc/letsencrypt", "/var/lib/letsencrypt", "/var/log/letsencrypt"]
 
 STOPSIGNAL SIGKILL
 
-ENTRYPOINT ["/bin/sh", "-c", "certbot certonly --non-interactive --agree-tos --register-unsafely-without-email --standalone --deploy-hook /etc/periodic/daily/certbot --key-type ecdsa --domain $(hostname) \"$@\" && exec crond -f", "--"]
+ENTRYPOINT ["/bin/sh", "-c", "certbot certonly --non-interactive --agree-tos --register-unsafely-without-email --standalone --deploy-hook /etc/periodic/daily/certbot --key-type ecdsa --domain \"$(hostname)\" \"$@\" || test -f \"/etc/letsencrypt/renewal/$(hostname).conf\" && exec crond -f", "--"]
