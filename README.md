@@ -6,7 +6,7 @@ docker run -d \
   --publish 80:80/tcp \
   --volume /etc/letsencrypt:/etc/letsencrypt \
   --volume /var/run/docker.sock:/var/run/docker.sock \
-  ntkme/certbot
+  ghcr.io/ntkme/certbot
 ```
 
 ``` sh
@@ -17,5 +17,5 @@ podman run -d \
   --publish 80:80/tcp \
   --volume /etc/letsencrypt:/etc/letsencrypt \
   --volume /var/run/podman/podman.sock:/var/run/docker.sock \
-  ntkme/certbot
+  ghcr.io/ntkme/certbot
 ```
