@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.17.1
+FROM docker.io/library/alpine:3.17.2
 
 RUN apk add --no-cache certbot docker-py openssh-client
 
